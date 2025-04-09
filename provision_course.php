@@ -33,8 +33,6 @@ require_once(dirname(__FILE__) . '/classes/panopto_provision_form.php');
 require_once(dirname(__FILE__) . '/lib/panopto_data.php');
 require_once(dirname(__FILE__) . '/lib/block_panopto_lib.php');
 
-global $courses;
-
 // Populate list of servernames to select from.
 $aserverarray = [];
 $appkeyarray = [];
@@ -115,6 +113,69 @@ if ($mform->is_cancelled()) {
     $PAGE->navbar->add(get_string('blocks'), $manageblocks);
     $PAGE->navbar->add(get_string('pluginname', 'block_panopto'), $panoptosettings);
     $PAGE->navbar->add($provisiontitle, new moodle_url($PAGE->url));
+
+    echo $OUTPUT->header();
+
+    if ($courseidparam === 0 && isset($courses) && count($courses) > 0) {
+        $task = new \block_panopto\task\provision_courses();
+        $task->set_custom_data(['courseids' => $courses, 'selectedserver' => $selectedserver, 'selectedkey' => $selectedkey]);
+
+        if ($taskid = \core\task\manager::queue_adhoc_task($task)) {
+            $task->set_id($taskid);
+            $progressbaridnumber = $task->progress_start();
+            if ($progressbaridnumber) {
+
+                $progressbar = \core\output\stored_progress_bar::get_by_idnumber($progressbaridnumber);
+                echo $progressbar->get_content();
+                echo "<p>" . get_string('viewprovisiontasklog', 'block_panopto', new moodle_url('/admin/tasklogs.php', ['filter' => '\block_panopto\task\provision_courses'])) . "</p>";
+            }
+        }
+    } else if ($courseidparam !== 0) {
+        // Set the current Moodle course to retrieve info for / provision.
+        $panoptodata = new \panopto_data($courseidparam);
+
+        // If an application key and server name are pre-set (happens when provisioning from multi-select page) use those,
+        // otherwise retrieve values from the db.
+        if (isset($selectedserver) && !empty($selectedserver) &&
+            isset($selectedkey) && !empty($selectedkey)) {
+
+            // If we are not using the same server remove the folder ID reference.
+            // NOTE: A Moodle course can only point to one Panopto server at a time.
+            // So reprovisioning to a different server erases the folder mapping to the original server.
+            if ($panoptodata->servername !== $selectedserver) {
+                $panoptodata->sessiongroupid = null;
+            }
+            $panoptodata->servername = $selectedserver;
+            $panoptodata->applicationkey = $selectedkey;
+        }
+
+        if (isset($panoptodata->servername) && !empty($panoptodata->servername) &&
+            isset($panoptodata->applicationkey) && !empty($panoptodata->applicationkey)) {
+            $provisioningdata = $panoptodata->get_provisioning_info();
+            $provisioneddata = $panoptodata->provision_course($provisioningdata, false);
+            include('views/provisioned_course.html.php');
+        } else if ($coursecount == 1) {
+            // If there is only one course in the count and the server info is invalid redirect
+            // to the form for manual provisioning.
+            $mform->display();
+        } else {
+            // For some reason the server name or application key are invalid and we can't redirect
+            // to the form since there are multiple courses, let the user know.
+            echo "<div class='block_panopto'>" .
+                    "<div class='panoptoProcessInformation'>" .
+                        "<div class='errorMessage'>" . get_string('server_info_not_valid', 'block_panopto') . "</div>" .
+                        "<div class='attribute'>" . get_string('server_name', 'block_panopto') . "</div>" .
+                        "<div class='value'>" . format_string($panoptodata->servername, false) . "</div>" .
+                    "</div>" .
+                "</div>";
+        }
+
+        echo "<a href='$returnurl'>" . get_string('back_to_config', 'block_panopto') . '</a>';
+    } else {
+        $mform->display();
+    }
+
+    echo $OUTPUT->footer();
 }
 
 echo $OUTPUT->header();
