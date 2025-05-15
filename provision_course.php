@@ -134,7 +134,7 @@ if ($mform->is_cancelled()) {
 
                 $progressbar = \core\output\stored_progress_bar::get_by_idnumber($progressbaridnumber);
                 echo $progressbar->get_content();
-                echo "<p>" . get_string('viewprovisiontasklog', 'block_panopto', new moodle_url('/admin/tasklogs.php', ['filter' => '\block_panopto\task\provision_courses'])) . "</p>";
+                echo "<p>" . get_string('viewtasklog', 'block_panopto', new moodle_url('/admin/tasklogs.php', ['filter' => '\block_panopto\task\provision_courses'])) . "</p>";
             }
         }
     } else if ($courseidparam !== 0) {
