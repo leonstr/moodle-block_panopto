@@ -408,5 +408,10 @@ if ($ADMIN->fulltree) {
         get_string('block_global_rename_all_folders', 'block_panopto') . '</a>';
 
     $settings->add(new admin_setting_heading('block_panopto_rename_all_folders', '', $bulkrenamelink));
+
+    $insertltilinkslink = '<a id="panopto_insert_lti_links_btn" href="' . $CFG->wwwroot . '/blocks/panopto/insert_lti_links.php">' .
+        get_string('insertltilinktocourses', 'block_panopto') . '</a>';
+
+    $settings->add(new admin_setting_heading('insertltilinktocourses', '', $insertltilinkslink));
 }
 /* End of file settings.php */

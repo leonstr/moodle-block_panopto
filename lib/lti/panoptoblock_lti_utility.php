@@ -780,4 +780,32 @@ class panoptoblock_lti_utility {
 
         return $tooltypes;
     }
+
+    /**
+     * Insert an LTI tool as a course activity.
+     *
+     * @param int $courseid Course to add the LTI tool instance to.
+     * @param stdClass $tool LTI tool to add.
+     */
+    public static function insert_course_tool(int $courseid, stdClass $tool): void {
+        // Default intro should be a folderview.
+        $draftideditor = file_get_submitted_draft_itemid('introeditor');
+        file_prepare_draft_area($draftideditor, null, null, null, null, ['subdirs' => true]);
+
+        $moduleinfo = new stdClass();
+        $moduleinfo->modulename = 'lti';
+        $moduleinfo->course = $courseid;
+        $moduleinfo->section = 0;
+        $moduleinfo->name = get_string('panopto_course_tool', 'block_panopto');
+        $moduleinfo->title = $tool->name;
+        $moduleinfo->typeid = $tool->id;
+        $moduleinfo->showdescriptionlaunch = false;
+        $moduleinfo->showtitlelaunch = false;
+        $moduleinfo->launchcontainer = LTI_LAUNCH_CONTAINER_DEFAULT;
+        $moduleinfo->visible = true;
+        $moduleinfo->intro = '';
+        $moduleinfo->icon = 'https://static-contents.panopto.com/prod/panopto_logo_moodle_tool_60x60.png';
+        $moduleinfo->introeditor = ['text' => $moduleinfo->intro, 'format' => FORMAT_HTML, 'itemid' => $draftideditor];
+        create_module($moduleinfo);
+    }
 }
